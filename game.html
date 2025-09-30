@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>لعبة الهيروغليفية</title>
+  <style>
+    body {
+      font-family: "Segoe UI Historic", "Arial", sans-serif;
+      text-align: center;
+      background: #f4f1e3;
+      direction: rtl;
+    }
+    #board {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .slot {
+      width: 80px;
+      height: 80px;
+      border: 2px dashed #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      font-size: 40px;
+    }
+    .tile {
+      width: 70px;
+      height: 70px;
+      border: 1px solid #333;
+      background: #fff6c1;
+      cursor: grab;
+      margin: 5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+    #tiles {
+      margin-top: 20px;
+      display: none; /* مخفية في البداية */
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 5px;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: #fff;
+      display: none; /* مخفية في البداية */
+    }
+    th, td {
+      border: 1px solid #555;
+      padding: 8px 12px;
+      font-size: 24px;
+    }
+    th {
+      background-color: #f0d9b5;
+    }
+    .correct {
+      background-color: #a6f3a6;
+    }
+    .wrong {
+      background-color: #f3a6a6;
+    }
+    /* زر فحص الإجابة */
+    #checkBtn {
+      display: none; /* مخفي في البداية */
+      font-size: 24px;       
+      padding: 12px 30px;    
+      background-color: #f0a500; 
+      color: white;          
+      border: none;
+      border-radius: 10px;   
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    #checkBtn:hover {
+      background-color: #d18b00; 
+    }
+    /* صندوق إدخال الاسم بنفس شكل زر الفحص */
+    #nameInput {
+      font-size: 24px;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 10px;
+      text-align: center;
+      width: 250px;
+      margin-right: 10px;
+    }
+    #startBtn {
+      font-size: 24px;       
+      padding: 12px 30px;    
+      background-color: #f0a500; 
+      color: white;          
+      border: none;
+      border-radius: 10px;   
+      cursor: pointer;
+    }
+    #startBtn:hover {
+      background-color: #d18b00; 
+    }
+  </style>
+</head>
+<body>
+  <h1>✦ اكتب اسمك بالهيروغليفية ✦</h1>
+  
+  <!-- المرحلة الأولى: إدخال الاسم -->
+  <div id="nameInputSection">
+    <input type="text" id="nameInput" placeholder="اكتب اسمك هنا">
+    <button id="startBtn" onclick="startGame()">ابدأ</button>
+  </div>
+
+  <!-- المرحلة الثانية: اللعبة -->
+  <div id="gameSection">
+    <div id="board"></div>
+    <div id="tiles"></div>
+    <button id="checkBtn" onclick="checkAnswer()">فحص الإجابة</button>
+
+    <h2>جدول الحروف الهيروغليفية والعربية</h2>
+    <table id="referenceTable">
+      <tr>
+        <th>الحرف العربي</th>
+        <th>الرمز الهيروغليفي</th>
+      </tr>
+    </table>
+  </div>
+
+  <script>
+    const hieroMap = {
+      "ا":"𓀀","ب":"𓀁","ت":"𓀂","ث":"𓀃","ج":"𓀄","ح":"𓀅",
+      "خ":"𓀆","د":"𓀇","ر":"𓀈","ز":"𓀉","س":"𓀊","ش":"𓀋",
+      "ص":"𓀌","ض":"𓀍","ط":"𓀎","ع":"𓀏","غ":"𓀐","ف":"𓀑",
+      "ق":"𓀒","ك":"𓀓","ل":"𓀔","م":"𓀕","ن":"𓀖","ه":"𓀗",
+      "و":"𓀘","ي":"𓀙"
+    };
+
+    function startGame() {
+      const name = document.getElementById("nameInput").value.trim();
+      if (name.length === 0) {
+        alert("الرجاء كتابة اسم أولاً");
+        return;
+      }
+
+      document.getElementById("nameInputSection").style.display = "none";
+      document.getElementById("tiles").style.display = "flex";
+      document.getElementById("checkBtn").style.display = "inline-block";
+      document.getElementById("referenceTable").style.display = "table";
+
+      const board = document.getElementById("board");
+      const tiles = document.getElementById("tiles");
+      board.innerHTML = "";
+      tiles.innerHTML = "";
+
+      // إنشاء خانات الاسم
+      for (let i = 0; i < name.length; i++) {
+        const slot = document.createElement("div");
+        slot.className = "slot";
+        slot.dataset.letter = name[i];
+        board.appendChild(slot);
+      }
+
+      // إنشاء مكعبان لكل حرف مع حفظ الموقع الأصلي
+      for (let letter in hieroMap) {
+        for (let i = 0; i < 2; i++) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          tile.draggable = true;
+          tile.dataset.letter = letter;
+          tile.textContent = hieroMap[letter];
+
+          // حفظ الموقع الأصلي
+          tile.dataset.originalParent = "tiles";
+
+          tile.addEventListener("dragstart", e => {
+            e.dataTransfer.setData("text", letter);
+            e.dataTransfer.setData("tileId", tile.dataset.letter + "_" + i); // معرف فريد لكل مكعب
+          });
+
+          tiles.appendChild(tile);
+        }
+      }
+
+      // الإفلات في الخانات
+      document.querySelectorAll(".slot").forEach(slot => {
+        slot.addEventListener("dragover", e => e.preventDefault());
+        slot.addEventListener("drop", e => {
+          e.preventDefault();
+          const letter = e.dataTransfer.getData("text");
+
+          // إزالة المكعب القديم إذا موجود وإعادته للمخزن
+          if (slot.textContent) {
+            const oldLetter = slot.textContent;
+            const originalTiles = Array.from(document.querySelectorAll(".tile"));
+            const oldTile = document.createElement("div");
+            oldTile.className = "tile";
+            oldTile.draggable = true;
+            oldTile.dataset.letter = Object.keys(hieroMap).find(k => hieroMap[k] === oldLetter);
+            oldTile.textContent = oldLetter;
+
+            oldTile.addEventListener("dragstart", e => {
+              e.dataTransfer.setData("text", oldTile.dataset.letter);
+            });
+
+            tiles.appendChild(oldTile);
+          }
+
+          // وضع المكعب الجديد في الخانة
+          slot.textContent = hieroMap[letter];
+
+          // إزالة المكعب المستخدم من المخزن
+          const tilesArray = Array.from(document.querySelectorAll(".tile"));
+          for (let t of tilesArray) {
+            if (t.dataset.letter === letter && t.textContent === hieroMap[letter]) {
+              t.remove();
+              break;
+            }
+          }
+        });
+      });
+
+      // إنشاء جدول الحروف الهيروغليفية (مرة واحدة)
+      const table = document.getElementById("referenceTable");
+      if (table.rows.length === 1) {
+        for (let letter in hieroMap) {
+          const row = document.createElement("tr");
+          const arabicCell = document.createElement("td");
+          arabicCell.textContent = letter;
+          const hieroCell = document.createElement("td");
+          hieroCell.textContent = hieroMap[letter];
+          row.appendChild(arabicCell);
+          row.appendChild(hieroCell);
+          table.appendChild(row);
+        }
+      }
+    }
+
+    function checkAnswer() {
+      const slots = document.querySelectorAll(".slot");
+      slots.forEach(slot => {
+        if (slot.textContent === hieroMap[slot.dataset.letter]) {
+          slot.classList.add("correct");
+          slot.classList.remove("wrong");
+        } else {
+          slot.classList.add("wrong");
+          slot.classList.remove("correct");
+        }
+      });
+    }
+  </script>
+</body>
+</html>
